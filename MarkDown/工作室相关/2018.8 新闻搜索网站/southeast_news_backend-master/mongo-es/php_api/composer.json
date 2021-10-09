@@ -1,0 +1,12 @@
+{
+    "require": {
+        "elasticsearch/elasticsearch":"~6.0",
+        "mobiledetect/mobiledetectlib": "^2.8"
+    },
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "https://packagist.phpcomposer.com"
+        }
+    }
+}
