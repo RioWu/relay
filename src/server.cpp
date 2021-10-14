@@ -1,4 +1,6 @@
 #include "server_epoll.h"
+#include "lib.h"
+#include "fcntl.h"
 int main(int argc, const char *argv[])
 {
     int listen_fd;
@@ -8,8 +10,9 @@ int main(int argc, const char *argv[])
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = htons(6666);
-    bind(listen_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    listen(listen_fd, LISTENQ);
+    Bind(listen_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    Listen(listen_fd, LISTENQ);
     CLServerEpoll server_epoll(listen_fd);
+    server_epoll.addEvent(listen_fd, 1);
     server_epoll.work();
 }

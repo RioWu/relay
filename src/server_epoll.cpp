@@ -1,9 +1,10 @@
 #include "server_epoll.h"
+#include "lib.h"
+#include "fcntl.h"
+#include <string>
 CLServerEpoll::CLServerEpoll(int listen_fd)
 {
-    n_unmapped_conn = 0;
     CLServerEpoll::listen_fd = listen_fd;
-    current_stored_connfd = 0;
     epoll_fd = epoll_create1(0);
     events = (epoll_event *)calloc(EpollEvents, sizeof(epoll_event));
     addEvent(CLServerEpoll::listen_fd, 1);
@@ -37,70 +38,69 @@ void CLServerEpoll::handleEpoll(epoll_event *events, int num_events)
 }
 void CLServerEpoll::doAccept()
 {
+    int client_id;
     sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
-    int connfd = accept(listen_fd, (struct sockaddr *)&client_addr, &client_addr_len);
-    n_unmapped_conn++;
-    if (n_unmapped_conn == 1)
-    {
-        current_stored_connfd = connfd;
-    }
-    else if (n_unmapped_conn == 2)
-    {
-        server_map.addSession(current_stored_connfd, connfd);
-        server_map.addSession(connfd, current_stored_connfd);
-        server_map.addAvailablePair(connfd, true);
-        server_map.addAvailablePair(current_stored_connfd, true);
-        addEvent(connfd, 1);
-        addEvent(current_stored_connfd, 1);
-        n_unmapped_conn = 0;
-    }
+    int conn_fd = Accept(listen_fd, (struct sockaddr *)&client_addr, &client_addr_len);
+    read(conn_fd, &client_id, MaxSize);
+    server_map.addBindPair(conn_fd, client_id, 0);
+    server_map.addBindPair(client_id, conn_fd, 1);
+    //set nonblock mode
+    int val = Fcntl(conn_fd, F_GETFL, 0);
+    Fcntl(conn_fd, F_SETFL, val | O_NONBLOCK);
+    //client_id is odd,should write first
+    if (client_id % 2 == 1)
+        addEvent(conn_fd, 1);
 }
-void CLServerEpoll::doRead(int key_connfd)
+void CLServerEpoll::doRead(int conn_fd)
 {
-    int value_connfd = server_map.searchSessionPair(key_connfd);
-    int num_read;
+    int client_id = server_map.getClientId(conn_fd);
     char buf[MaxSize];
-    num_read = read(key_connfd, buf, MaxSize);
-    if (num_read == -1 || num_read == 0)
+    //after even conn read,odd conn write
+    if (client_id % 2 == 0)
     {
-        server_map.modifyAvailablePair(key_connfd, false);
+        keepRead(conn_fd, buf, MaxSize);
+        server_map.addData(client_id - 1, buf);
+        int odd_conn_fd = server_map.getConnFd(client_id - 1);
+        addEvent(odd_conn_fd, 0);
     }
-    else
+    //after odd conn read,even conn write
+    else if (client_id % 2 == 1)
     {
-        //char* type to string type
-        std::string str = buf;
-        server_map.addData(value_connfd, str);
-        addEvent(value_connfd, 0);
+        keepRead(conn_fd, buf, MaxSize);
+        server_map.addData(client_id + 1, buf);
+        int even_conn_fd = server_map.getConnFd(client_id + 1);
+        addEvent(even_conn_fd, 0);
     }
 }
-void CLServerEpoll::doWrite(int value_connfd)
+void CLServerEpoll::doWrite(int conn_fd)
 {
-    int num_write;
-    std::string data = server_map.getData(value_connfd);
-    //string type to char* type
-    num_write = write(value_connfd, (char *)data.data(), MaxSize);
-    if (num_write == -1)
-    {
-        server_map.modifyAvailablePair(value_connfd, false);
-    }
+    //after conn write,the same conn read
+    int client_id = server_map.getClientId(conn_fd);
+    char buf[MaxSize];
+    std::string str = server_map.getData(client_id);
+    strcpy(buf, str.c_str());
+    writeN(conn_fd, buf, MaxSize, str.length());
+    addEvent(conn_fd, 1);
+    server_map.deleteData(client_id);
 }
 //option = 0:add writable event
 //option = 1:add readable event
-void CLServerEpoll::addEvent(int connfd, int option)
+void CLServerEpoll::addEvent(int conn_fd, int option)
 {
     if (option == 0)
+
     {
         struct epoll_event event_writable;
-        event_writable.data.fd = connfd;
-        event_writable.events = EPOLLOUT;
-        epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connfd, &event_writable);
+        event_writable.data.fd = conn_fd;
+        event_writable.events = EPOLLOUT | EPOLLET;
+        epoll_ctl(epoll_fd, EPOLL_CTL_ADD, conn_fd, &event_writable);
     }
     if (option == 1)
     {
         struct epoll_event event_readable;
-        event_readable.data.fd = connfd;
-        event_readable.events = EPOLLIN;
-        epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connfd, &event_readable);
+        event_readable.data.fd = conn_fd;
+        event_readable.events = EPOLLIN | EPOLLET;
+        epoll_ctl(epoll_fd, EPOLL_CTL_ADD, conn_fd, &event_readable);
     }
 }

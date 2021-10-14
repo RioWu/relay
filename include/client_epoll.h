@@ -2,24 +2,26 @@
 #include <string>
 #include <unistd.h>
 #include <random>
-#define EpollEvents 1024
-#define MaxSize 1024
+#include "client_map.h"
+#define EpollEvents 10000
+#define MaxSize 10240
 class CLClientEpoll
 {
 private:
     int epoll_fd;
-    int length;
     int num_session_finished;
     int num_session_failed;
+    std::string str;
+    int length;
     epoll_event *events;
-    std::string generateString();
 
 public:
-    CLClientEpoll(int length);
+    CLClientEpoll(std::string str, int length);
     ~CLClientEpoll();
+    CLClientMap client_map;
     void work();
     void handleEpoll(epoll_event *events, int num_events);
-    void doRead(int connfd);
-    void doWrite(int connfd);
-    void addEvent(int connfd, int option);
+    void doRead(int socket_fd);
+    void doWrite(int socket_fd);
+    void addEvent(int fd, int option);
 };

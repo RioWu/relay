@@ -1,33 +1,33 @@
 #include "server_map.h"
-bool CLServerMap::isAvailable(int connfd)
-{
-    return available_map.at(connfd);
-}
-void CLServerMap::addAvailablePair(int connfd, bool status)
-{
-    available_map.insert(pair<int, bool>(connfd, status));
-}
-void CLServerMap::modifyAvailablePair(int connfd, bool status)
-{
-    std::unordered_map<int, bool>::iterator it;
-    it = available_map.find(connfd);
-    it->second = status;
-}
 
-void CLServerMap::addSession(int key_connfd, int value_connfd)
+/**
+ * 0 means add pair to client_conn_map
+ * 1 means add pair to conn_client_map
+**/
+void CLServerMap::addBindPair(int conn_fd, int client_id, int option)
 {
-    session_map.insert(pair<int, int>(key_connfd, value_connfd));
+    if (option == 0)
+        client_conn_map.insert(pair<int, int>(conn_fd, client_id));
+    if (option == 1)
+        conn_client_map.insert(pair<int, int>(client_id, conn_fd));
 }
-int CLServerMap::searchSessionPair(int key_connfd)
+int CLServerMap::getClientId(int conn_fd)
 {
-    return session_map.at(key_connfd);
+    return conn_client_map.at(conn_fd);
 }
-
-void CLServerMap::addData(int value_connfd, std::string data)
+int CLServerMap::getConnFd(int client_fd)
 {
-    data_map.insert(pair<int, std::string>(value_connfd, data));
+    return client_conn_map.at(client_fd);
 }
-std::string CLServerMap::getData(int value_connfd)
+void CLServerMap::addData(int client_id, std::string data)
 {
-    return data_map.at(value_connfd);
+    data_map.insert(pair<int, std::string>(client_id, data));
+}
+std::string CLServerMap::getData(int client_id)
+{
+    return data_map.at(client_id);
+}
+void CLServerMap::deleteData(int client_id)
+{
+    data_map.erase(client_id);
 }

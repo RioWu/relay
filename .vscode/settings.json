@@ -1,0 +1,7 @@
+{
+    "editor.formatOnSave": true,
+    "cmake.configureOnOpen": true,
+    "files.associations": {
+        "functional": "cpp"
+    }
+}
