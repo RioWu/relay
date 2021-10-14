@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <sstream>
 #include "lib.h"
 
 std::string generateString(int length)
@@ -39,10 +40,10 @@ int main(int argc, const char *argv[])
         printf("usage:client session_num string_length\n");
         exit(0);
     }
-
+    int client_id;
+    std::stringstream ss;
     int session_num = atoi(argv[1]);
     int string_length = atoi(argv[2]);
-    int socket_fd;
     struct sockaddr_in servaddr;
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
@@ -50,25 +51,31 @@ int main(int argc, const char *argv[])
     inet_pton(AF_INET, "127.0.0.1", &servaddr.sin_addr);
     std::string str = generateString(string_length);
     printf("generated string is : %s\n", str.c_str());
-    pause();
     CLClientEpoll client_epoll(str, string_length);
-    for (int i = 1; i <= session_num * 2; i++)
+    int socket_init = Socket(AF_INET, SOCK_STREAM, 0);
+    Connect(socket_init, (struct sockaddr *)&servaddr, sizeof(servaddr));
+    string_length = htonl(string_length);
+    write(socket_init, &string_length, sizeof(string_length));
+    close(socket_init);
+    for (client_id = 1; client_id <= session_num * 2; client_id++)
     {
         int socket_fd = Socket(AF_INET, SOCK_STREAM, 0);
-
         Connect(socket_fd, (struct sockaddr *)&servaddr, sizeof(servaddr));
-        client_epoll.client_map.addBindPair(socket_fd, i, 0);
-        client_epoll.client_map.addBindPair(socket_fd, i, 1);
-        write(socket_fd, &i, MaxSize);
+        client_epoll.client_map.addBindPair(socket_fd, client_id, 0);
+        client_epoll.client_map.addBindPair(socket_fd, client_id, 1);
+
+        client_id = htonl(client_id);
+        write(socket_fd, &client_id, sizeof(client_id));
         // i is an even number,should write first
-        if (i % 2 == 1)
+        if (client_id % 2 == 1)
             client_epoll.addEvent(socket_fd, 0);
         // i is an odd number,should read first
-        if (i % 2 == 0)
+        if (client_id % 2 == 0)
             client_epoll.addEvent(socket_fd, 1);
+        // set nonblock mode
+        int val = Fcntl(socket_fd, F_GETFL, 0);
+        Fcntl(socket_fd, F_SETFL, val | O_NONBLOCK);
     }
-    //set nonblock mode
-    int val = Fcntl(socket_fd, F_GETFL, 0);
-    Fcntl(socket_fd, F_SETFL, val | O_NONBLOCK);
+
     client_epoll.work();
 }

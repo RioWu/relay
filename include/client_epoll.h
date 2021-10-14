@@ -4,7 +4,6 @@
 #include <random>
 #include "client_map.h"
 #define EpollEvents 10000
-#define MaxSize 10240
 class CLClientEpoll
 {
 private:
@@ -12,11 +11,11 @@ private:
     int num_session_finished;
     int num_session_failed;
     std::string str;
-    int length;
+    int string_length;
     epoll_event *events;
 
 public:
-    CLClientEpoll(std::string str, int length);
+    CLClientEpoll(std::string str, int string_length);
     ~CLClientEpoll();
     CLClientMap client_map;
     void work();

@@ -12,11 +12,12 @@ class CLServerEpoll
 private:
     int epoll_fd;
     int listen_fd;
+    int string_length;
     CLServerMap server_map;
     epoll_event *events;
 
 public:
-    CLServerEpoll(int listen_fd);
+    CLServerEpoll(int listen_fd, int string_length);
     ~CLServerEpoll();
     void work();
     void handleEpoll(epoll_event *events, int num_events);

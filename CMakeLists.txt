@@ -5,4 +5,4 @@ project(relay)
 include_directories(./include)
 add_executable(server ./src/server_epoll.cpp ./src/server_map.cpp ./src/server.cpp ./src/lib.cpp)
 add_executable(client ./src/client_epoll.cpp ./src/client.cpp ./src/client_map.cpp ./src/lib.cpp)
-
+add_definitions("-Wall -g")
