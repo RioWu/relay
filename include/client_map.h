@@ -11,7 +11,7 @@ public:
     void addData(int session_id, std::string data);
     std::string getData(int session_id);
 
-    void addBindPair(int socket_fd, int client_id, int option);
-    int getClientId(int socked_fd);
+    void addBindPair(int socket_fd, int client_id);
+    int getClientId(int socket_fd);
     int getSocketFd(int clinet_id);
 };

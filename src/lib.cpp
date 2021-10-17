@@ -56,14 +56,14 @@ int Fcntl(int fd, int cmd, int arg)
     }
     return ret;
 }
-void writeN(int fd, char *buf, int n, int length)
+void writeN(int fd, char *buf, int n)
 {
-    int n_left = length;
+    int n_left = n;
     int write_pointer = 0;
     while (n_left > 0)
     {
         int n_write = 0;
-        n_write = write(fd, buf + write_pointer, n);
+        n_write = write(fd, buf + write_pointer, n_left);
         if (errno == EAGAIN)
             n_write = 0;
         else
@@ -73,14 +73,20 @@ void writeN(int fd, char *buf, int n, int length)
         }
     }
 }
-void keepRead(int fd, char *buf, int n)
+void readN(int fd, char *buf, int n)
 {
-
+    int n_left = n;
     int read_pointer = 0;
-    while (errno != EAGAIN)
+    while (n_left > 0)
     {
         int n_read = 0;
-        n_read = read(fd, buf + read_pointer, n);
-        read_pointer = read_pointer + n_read;
+        n_read = read(fd, buf + read_pointer, n_left);
+        if (errno == EAGAIN)
+            n_read = 0;
+        else
+        {
+            n_left = n_left - n_read;
+            read_pointer = read_pointer + n_read;
+        }
     }
 }

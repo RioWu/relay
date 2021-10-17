@@ -4,9 +4,8 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include "server_map.h"
-#define EpollEvents 10000
-#define MaxSize 10240
-#define LISTENQ 1024
+#define EpollEvents 10240
+#define LISTENQ 10
 class CLServerEpoll
 {
 private:

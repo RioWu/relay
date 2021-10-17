@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <random>
 #include "client_map.h"
-#define EpollEvents 10000
+#define EpollEvents 10240
 class CLClientEpoll
 {
 private:

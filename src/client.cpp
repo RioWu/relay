@@ -3,7 +3,6 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <string.h>
-#include <sstream>
 #include "lib.h"
 
 std::string generateString(int length)
@@ -41,7 +40,6 @@ int main(int argc, const char *argv[])
         exit(0);
     }
     int client_id;
-    std::stringstream ss;
     int session_num = atoi(argv[1]);
     int string_length = atoi(argv[2]);
     struct sockaddr_in servaddr;
@@ -56,25 +54,28 @@ int main(int argc, const char *argv[])
     Connect(socket_init, (struct sockaddr *)&servaddr, sizeof(servaddr));
     string_length = htonl(string_length);
     write(socket_init, &string_length, sizeof(string_length));
-    close(socket_init);
+    string_length = ntohl(string_length);
     for (client_id = 1; client_id <= session_num * 2; client_id++)
     {
         int socket_fd = Socket(AF_INET, SOCK_STREAM, 0);
+        // connect use block mode
         Connect(socket_fd, (struct sockaddr *)&servaddr, sizeof(servaddr));
-        client_epoll.client_map.addBindPair(socket_fd, client_id, 0);
-        client_epoll.client_map.addBindPair(socket_fd, client_id, 1);
+        client_epoll.client_map.addBindPair(socket_fd, client_id);
 
         client_id = htonl(client_id);
+        // first write use block mode
         write(socket_fd, &client_id, sizeof(client_id));
-        // i is an even number,should write first
-        if (client_id % 2 == 1)
-            client_epoll.addEvent(socket_fd, 0);
-        // i is an odd number,should read first
-        if (client_id % 2 == 0)
-            client_epoll.addEvent(socket_fd, 1);
+        client_id = ntohl(client_id);
         // set nonblock mode
-        int val = Fcntl(socket_fd, F_GETFL, 0);
-        Fcntl(socket_fd, F_SETFL, val | O_NONBLOCK);
+        Fcntl(socket_fd, F_SETFL, Fcntl(socket_fd, F_GETFL, 0) | O_NONBLOCK);
+
+        // after a pair of socket connect successfully,add event;
+        // odd client should write first
+        if (client_id % 2 % 2 == 0)
+        {
+            int socket_fd_odd = client_epoll.client_map.getSocketFd(client_id - 1);
+            client_epoll.addEvent(socket_fd_odd, 0);
+        }
     }
 
     client_epoll.work();

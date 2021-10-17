@@ -1,15 +1,9 @@
 #include "server_map.h"
 
-/**
- * 0 means add pair to client_conn_map
- * 1 means add pair to conn_client_map
-**/
-void CLServerMap::addBindPair(int conn_fd, int client_id, int option)
+void CLServerMap::addBindPair(int client_id, int conn_fd)
 {
-    if (option == 0)
-        client_conn_map.insert(pair<int, int>(conn_fd, client_id));
-    if (option == 1)
-        conn_client_map.insert(pair<int, int>(client_id, conn_fd));
+    client_conn_map.insert(pair<int, int>(client_id, conn_fd));
+    conn_client_map.insert(pair<int, int>(conn_fd, client_id));
 }
 int CLServerMap::getClientId(int conn_fd)
 {

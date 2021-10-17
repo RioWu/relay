@@ -7,16 +7,10 @@ std::string CLClientMap::getData(int client_id)
 {
     return data_map.at(client_id);
 }
-/**
- * 0 means add pair to sock_cli_map
- * 1 means add pair to cli_sock_map
-**/
-void CLClientMap::addBindPair(int socket_fd, int client_id, int option)
+void CLClientMap::addBindPair(int socket_fd, int client_id)
 {
-    if (option == 0)
-        sock_cli_map.insert(pair<int, int>(socket_fd, client_id));
-    if (option == 1)
-        cli_sock_map.insert(pair<int, int>(client_id, socket_fd));
+    sock_cli_map.insert(pair<int, int>(socket_fd, client_id));
+    cli_sock_map.insert(pair<int, int>(client_id, socket_fd));
 }
 int CLClientMap::getClientId(int socket_fd)
 {

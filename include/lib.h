@@ -10,5 +10,5 @@ void Listen(int fd, int n);
 int Socket(int domain, int type, int protocol);
 int Accept(int fd, sockaddr *__restrict__ addr, socklen_t *__restrict__ addr_len);
 int Fcntl(int fd, int cmd, int arg);
-void writeN(int fd, char *buf, int n, int length);
-void keepRead(int fd, char *buf, int n);
+void writeN(int fd, char *buf, int n);
+void readN(int fd, char *buf, int n);

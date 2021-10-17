@@ -7,7 +7,7 @@ CLClientEpoll::CLClientEpoll(std::string str, int string_length)
     num_session_finished = 0;
     num_session_failed = 0;
     epoll_fd = epoll_create1(0);
-    events = (epoll_event *)calloc(EpollEvents, sizeof(epoll_event));
+    events = (epoll_event *)calloc(128, sizeof(epoll_event));
 }
 CLClientEpoll::~CLClientEpoll()
 {
@@ -38,18 +38,19 @@ void CLClientEpoll::doRead(int socket_fd)
 {
     char buf[string_length];
     int client_id = client_map.getClientId(socket_fd);
+    printf("client %d is reading now\n", client_id);
     // client_id is odd,after read,should verify the accuracy
     if (client_id % 2 == 1)
     {
         // in nonblock mode,should keep read until get EAGAIN error
-        keepRead(socket_fd, buf, string_length);
+        readN(socket_fd, buf, string_length);
         std::string str = client_map.getData((client_id + 1) / 2);
         // char * to string
         string received_data(buf);
         if (received_data == str)
         {
             num_session_finished++;
-            printf("has finished %d sessions", num_session_finished);
+            printf("has finished %d sessions\n", num_session_finished);
         }
         else
         {
@@ -60,23 +61,22 @@ void CLClientEpoll::doRead(int socket_fd)
     // client_id is even,after read,should write same data to matched client
     else if (client_id % 2 == 0)
     {
-        keepRead(socket_fd, buf, string_length);
+        readN(socket_fd, buf, string_length);
         // char * to string
         string received_data(buf);
         client_map.addData(client_id, received_data);
-        addEvent(client_id, 1);
+        addEvent(socket_fd, 0);
     }
 }
 void CLClientEpoll::doWrite(int socket_fd)
 {
     int client_id = client_map.getClientId(socket_fd);
-    // client_id is odd,do generateString
+    printf("client %d is writing now\n", client_id);
+    // client_id is odd
     if (client_id % 2 == 1)
     {
         int matched_socket = client_map.getSocketFd(client_id + 1);
-        // for odd client_id,session_id = (client_id + 1)/2
-        client_map.addData((client_id + 1) / 2, str);
-        writeN(socket_fd, (char *)str.data(), string_length, string_length);
+        writeN(socket_fd, (char *)str.data(), string_length);
         addEvent(matched_socket, 1);
     }
     // client_id is even
