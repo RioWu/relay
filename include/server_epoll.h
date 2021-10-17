@@ -24,4 +24,5 @@ public:
     void doRead(int conn_fd);
     void doWrite(int conn_fd);
     void addEvent(int fd, int option);
+    void deleteEvent(int fd);
 };

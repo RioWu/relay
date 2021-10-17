@@ -44,7 +44,6 @@ void CLClientEpoll::doRead(int socket_fd)
     {
         // in nonblock mode,should keep read until get EAGAIN error
         readN(socket_fd, buf, string_length);
-        std::string str = client_map.getData((client_id + 1) / 2);
         // char * to string
         string received_data(buf);
         if (received_data == str)
@@ -57,6 +56,7 @@ void CLClientEpoll::doRead(int socket_fd)
             num_session_failed++;
             printf("has failed %d sessions", num_session_failed);
         }
+        deleteEvent(socket_fd);
     }
     // client_id is even,after read,should write same data to matched client
     else if (client_id % 2 == 0)
@@ -65,6 +65,7 @@ void CLClientEpoll::doRead(int socket_fd)
         // char * to string
         string received_data(buf);
         client_map.addData(client_id, received_data);
+        deleteEvent(socket_fd);
         addEvent(socket_fd, 0);
     }
 }
@@ -87,6 +88,7 @@ void CLClientEpoll::doWrite(int socket_fd)
         write(socket_fd, (char *)str.data(), string_length);
         addEvent(matched_socket, 1);
     }
+    deleteEvent(socket_fd);
 }
 /**
  * option = 0:add writable event
@@ -98,14 +100,18 @@ void CLClientEpoll::addEvent(int socket_fd, int option)
     {
         struct epoll_event event_writable;
         event_writable.data.fd = socket_fd;
-        event_writable.events = EPOLLOUT | EPOLLET;
+        event_writable.events = EPOLLOUT;
         epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event_writable);
     }
     if (option == 1)
     {
         struct epoll_event event_readable;
         event_readable.data.fd = socket_fd;
-        event_readable.events = EPOLLIN | EPOLLET;
+        event_readable.events = EPOLLIN;
         epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event_readable);
     }
+}
+void CLClientEpoll::deleteEvent(int socket_fd)
+{
+    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, socket_fd, NULL);
 }

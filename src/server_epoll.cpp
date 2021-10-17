@@ -80,6 +80,7 @@ void CLServerEpoll::doRead(int conn_fd)
         int even_conn_fd = server_map.getConnFd(client_id + 1);
         addEvent(even_conn_fd, 0);
     }
+    deleteEvent(conn_fd);
 }
 void CLServerEpoll::doWrite(int conn_fd)
 {
@@ -90,6 +91,7 @@ void CLServerEpoll::doWrite(int conn_fd)
     std::string str = server_map.getData(client_id);
     strcpy(buf, str.c_str());
     writeN(conn_fd, buf, string_length);
+    deleteEvent(conn_fd);
     addEvent(conn_fd, 1);
     server_map.deleteData(client_id);
 }
@@ -103,14 +105,14 @@ void CLServerEpoll::addEvent(int fd, int option)
     {
         struct epoll_event event_writable;
         event_writable.data.fd = fd;
-        event_writable.events = EPOLLOUT | EPOLLET;
+        event_writable.events = EPOLLOUT;
         epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event_writable);
     }
     if (option == 1)
     {
         struct epoll_event event_readable;
         event_readable.data.fd = fd;
-        event_readable.events = EPOLLIN | EPOLLET;
+        event_readable.events = EPOLLIN;
         epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event_readable);
     }
     if (option == 2)
@@ -120,4 +122,8 @@ void CLServerEpoll::addEvent(int fd, int option)
         event_readable.events = EPOLLIN;
         epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event_readable);
     }
+}
+void CLServerEpoll::deleteEvent(int socket_fd)
+{
+    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, socket_fd, NULL);
 }

@@ -56,4 +56,7 @@
   
     - At any single call of epoll_wait you'll at most receive as many events as you have room for, but of course events don't get lost if there are more than that queued up -- you'll simply get them at a later call. Since you'll be calling epoll_wait in a loop anyway, that shouldn't be an issue at all.
   
-- 2021.10.15
+- 2021.10.17
+
+  - 使用ET模式+非阻塞时，遇到非常奇怪的问题：客户端1转发数据至配对的客户端2，客户端2接受数据，到这里程序一切正常，但之后客户端2始终无法触发EPOLLOUT事件，无法将数据再转发给客户端1。
+  - 将ET模式改为LT模式，并在每次触发事件后删除对应事件（以免不必要的重复触发多次事件，尤其是写事件），程序正常运行，但仍然不确定使用ET模式出现BUG的原因。

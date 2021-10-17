@@ -23,4 +23,5 @@ public:
     void doRead(int socket_fd);
     void doWrite(int socket_fd);
     void addEvent(int fd, int option);
+    void deleteEvent(int fd);
 };
