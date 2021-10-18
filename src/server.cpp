@@ -20,6 +20,6 @@ int main(int argc, const char *argv[])
     read(conn_fd, &string_length, sizeof(string_length));
     string_length = ntohl(string_length);
     CLServerEpoll server_epoll(listen_fd, string_length);
-    server_epoll.addEvent(listen_fd, 2);
+    server_epoll.addEvent(listen_fd, 1);
     server_epoll.work();
 }
