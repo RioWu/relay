@@ -48,7 +48,7 @@ int main(int argc, const char *argv[])
     servaddr.sin_port = htons(6666);
     inet_pton(AF_INET, "127.0.0.1", &servaddr.sin_addr);
     std::string str = generateString(string_length);
-    printf("generated string is : %s\n", str.c_str());
+    // printf("generated string is : %s\n", str.c_str());
     CLClientEpoll client_epoll(str, string_length);
     int socket_init = Socket(AF_INET, SOCK_STREAM, 0);
     Connect(socket_init, (struct sockaddr *)&servaddr, sizeof(servaddr));
@@ -78,6 +78,5 @@ int main(int argc, const char *argv[])
         }
     }
 
-    
     client_epoll.work();
 }

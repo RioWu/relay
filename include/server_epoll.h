@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <unordered_map>
-#define EpollEvents 10240
+#define EpollEvents 128
 #define LISTENQ 10
 class CLServerEpoll
 {

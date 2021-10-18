@@ -46,15 +46,22 @@ void CLClientEpoll::doRead(int socket_fd)
         readN(socket_fd, buf, string_length);
         // char * to string
         std::string received_data(buf);
+        // sometimes received_data would add a '/0' in the end
+        if ((int)received_data.length() == string_length + 1)
+            received_data.pop_back();
         if (received_data == str)
         {
             num_session_finished++;
             printf("has finished %d sessions\n", num_session_finished);
+            // printf("received data is %s\n", received_data.c_str());
         }
         else
         {
             num_session_failed++;
-            printf("has failed %d sessions", num_session_failed);
+            printf("has failed %d sessions\n", num_session_failed);
+            // printf("received data is %s,length is %lu\n", received_data.c_str(), received_data.length());
+            // printf("the correct data is %s,length is %lu\n", str.c_str(), str.length());
+            exit(0);
         }
         deleteEvent(socket_fd);
     }

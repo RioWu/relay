@@ -124,11 +124,23 @@ void CLServerEpoll::addBindPair(int client_id, int conn_fd)
 }
 int CLServerEpoll::getClientId(int conn_fd)
 {
-    return conn_client_map.at(conn_fd);
+    if (conn_client_map.find(conn_fd) == conn_client_map.end())
+    {
+        printf("element not find\n");
+        exit(0);
+    }
+    else
+        return conn_client_map.at(conn_fd);
 }
 int CLServerEpoll::getConnFd(int client_fd)
 {
-    return client_conn_map.at(client_fd);
+    if (client_conn_map.find(client_fd) == client_conn_map.end())
+    {
+        printf("element not find\n");
+        exit(0);
+    }
+    else
+        return client_conn_map.at(client_fd);
 }
 void CLServerEpoll::addData(int client_id, std::string data)
 {
@@ -136,7 +148,13 @@ void CLServerEpoll::addData(int client_id, std::string data)
 }
 std::string CLServerEpoll::getData(int client_id)
 {
-    return data_map.at(client_id);
+    if (data_map.find(client_id) == data_map.end())
+    {
+        printf("element not find\n");
+        exit(0);
+    }
+    else
+        return data_map.at(client_id);
 }
 void CLServerEpoll::deleteData(int client_id)
 {
