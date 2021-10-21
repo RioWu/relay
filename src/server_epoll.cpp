@@ -61,11 +61,17 @@ void CLServerEpoll::doRead(int conn_fd)
 {
     int client_id = getClientId(conn_fd);
     char buf[string_length];
+    readN(conn_fd, buf, string_length);
+    std::string data(buf);
+    // sometimes data.length is larger than string_length
+    while ((int)data.length() > string_length)
+    {
+        data.pop_back();
+    }
     // after even conn read,odd conn write
     if (client_id % 2 == 0)
     {
-        readN(conn_fd, buf, string_length);
-        std::string data(buf);
+
         addData(client_id - 1, data);
         int odd_conn_fd = getConnFd(client_id - 1);
         addEvent(odd_conn_fd, 0);
@@ -73,8 +79,6 @@ void CLServerEpoll::doRead(int conn_fd)
     // after odd conn read,even conn write
     else if (client_id % 2 == 1)
     {
-        readN(conn_fd, buf, string_length);
-        std::string data(buf);
         addData(client_id + 1, data);
         int even_conn_fd = getConnFd(client_id + 1);
         addEvent(even_conn_fd, 0);
@@ -144,7 +148,13 @@ int CLServerEpoll::getConnFd(int client_fd)
 }
 void CLServerEpoll::addData(int client_id, std::string data)
 {
-    data_map.insert(pair<int, std::string>(client_id, data));
+    std::pair<unordered_map<int, std::string>::iterator, bool> ret;
+    ret = data_map.insert(pair<int, std::string>(client_id, data));
+    if (ret.second == false)
+    {
+        printf("add data to data_map has failed\n");
+        exit(0);
+    }
 }
 std::string CLServerEpoll::getData(int client_id)
 {

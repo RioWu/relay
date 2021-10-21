@@ -42,18 +42,23 @@ void CLClientEpoll::doRead(int socket_fd)
     // client_id is odd,after read,should verify the accuracy
     if (client_id % 2 == 1)
     {
+        deleteEvent(socket_fd);
         // in nonblock mode,should keep read until get EAGAIN error
         readN(socket_fd, buf, string_length);
         // char * to string
         std::string received_data(buf);
         // sometimes received_data would add a '/0' in the end
-        if ((int)received_data.length() == string_length + 1)
+        while ((int)received_data.length() > string_length)
+        {
             received_data.pop_back();
+        }
+
         if (received_data == str)
         {
             num_session_finished++;
             printf("has finished %d sessions\n", num_session_finished);
             // printf("received data is %s\n", received_data.c_str());
+            addEvent(socket_fd, 0);
         }
         else
         {
@@ -63,7 +68,6 @@ void CLClientEpoll::doRead(int socket_fd)
             // printf("the correct data is %s,length is %lu\n", str.c_str(), str.length());
             exit(0);
         }
-        deleteEvent(socket_fd);
     }
     // client_id is even,after read,should write same data to matched client
     else if (client_id % 2 == 0)
