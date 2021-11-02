@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include "lib.h"
+#include <random>
 #include "client_epoll.h"
 
 std::string generateString(int length)
@@ -60,7 +61,7 @@ int main(int argc, const char *argv[])
         int socket_fd = Socket(AF_INET, SOCK_STREAM, 0);
         // connect use block mode
         Connect(socket_fd, (struct sockaddr *)&servaddr, sizeof(servaddr));
-        client_epoll.addBindPair(socket_fd, client_id);
+        client_epoll.client_map.addBindPair(socket_fd, client_id);
 
         client_id = htonl(client_id);
         // first write use block mode
@@ -73,7 +74,7 @@ int main(int argc, const char *argv[])
         // odd client should write first
         if (client_id % 2 % 2 == 0)
         {
-            int socket_fd_odd = client_epoll.getSocketFd(client_id - 1);
+            int socket_fd_odd = client_epoll.client_map.getSocketFd(client_id - 1);
             client_epoll.addEvent(socket_fd_odd, 0);
         }
     }
