@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
 // wrapped functions
 void Bind(int fd, const sockaddr *addr, socklen_t len);
 void Connect(int fd, const sockaddr *addr, socklen_t len);

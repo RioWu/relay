@@ -6,7 +6,8 @@ CLBuffer::CLBuffer(int socket_fd, int string_length)
     : socket_fd(socket_fd),
       string_length(string_length),
       write_n(0),
-      read_n(0)
+      read_n(0),
+      writeIndex(0)
 {
 }
 /**
@@ -33,6 +34,7 @@ int CLBuffer::writeByBuffer(char *data)
     if (write_n = string_length)
     {
         buffer.erase(buffer.begin() + writeIndex - 1, buffer.end() - 1);
+        writeIndex = buffer.size();
         return 1;
     }
     else
@@ -40,7 +42,7 @@ int CLBuffer::writeByBuffer(char *data)
 }
 /**
  *  return 1 means all data has been received
- *  put data after readIndex
+ *  put data after begin()
  **/
 int CLBuffer::readByBuffer()
 {

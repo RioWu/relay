@@ -1,6 +1,7 @@
 #include <sys/epoll.h>
 #include <string>
 #include <unistd.h>
+#include <time.h>
 #include "client_map.h"
 #define EpollEvents 128
 class CLClientEpoll
@@ -11,6 +12,7 @@ private:
     int num_session_failed;
     std::string str;
     int string_length;
+    clock_t start_time;
     epoll_event *events;
 
 public:
@@ -23,4 +25,5 @@ public:
     void doWrite(int socket_fd);
     void addEvent(int fd, int option);
     void deleteEvent(int fd);
+    void setStartTime(clock_t time);
 };

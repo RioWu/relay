@@ -1,5 +1,7 @@
 #include "client_epoll.h"
 #include "lib.h"
+#include <iostream>
+#include <string.h>
 using namespace std;
 CLClientEpoll::CLClientEpoll(std::string str, int string_length)
 {
@@ -43,10 +45,9 @@ void CLClientEpoll::doRead(int socket_fd)
     if (client_id % 2 == 1)
     {
         deleteEvent(socket_fd);
-        // in nonblock mode,should keep read until get EAGAIN error
         readN(socket_fd, buf, string_length);
         // char * to string
-        std::string received_data(buf);
+        std::string received_data = buf;
         while ((int)received_data.length() > string_length)
         {
             received_data.pop_back();
@@ -55,14 +56,16 @@ void CLClientEpoll::doRead(int socket_fd)
         if (received_data == str)
         {
             num_session_finished++;
-            printf("has finished %d sessions\n", num_session_finished);
+            // if (num_session_finished % 1000 == 0)
+            //     printf("has finished %d sessions\n", num_session_finished);
             // 测试环境为本机，如果限制总转发数量，程序会结束过快而无法检测性能
-            // if(num_session_finished == 1000)
-            // {
-            //     printf("ok!\n");
-            //     pause();
-            // }
-            // printf("received data is %s\n", received_data.c_str());
+            if (num_session_finished == 10000)
+            {
+                clock_t end_time = clock();
+                std::cout << "run time is " << (double)(end_time - start_time) / CLOCKS_PER_SEC << std::endl;
+                printf("10000 times relay ok!\n");
+                // pause();
+            }
             addEvent(socket_fd, 0);
         }
         else
@@ -79,7 +82,7 @@ void CLClientEpoll::doRead(int socket_fd)
     {
         readN(socket_fd, buf, string_length);
         // char * to string
-        std::string received_data(buf);
+        std::string received_data = buf;
         client_map.addData(client_id, received_data);
         deleteEvent(socket_fd);
         addEvent(socket_fd, 0);
@@ -114,6 +117,7 @@ void CLClientEpoll::addEvent(int socket_fd, int option)
     if (option == 0)
     {
         struct epoll_event event_writable;
+        bzero(&event_writable, sizeof(event_writable));
         event_writable.data.fd = socket_fd;
         event_writable.events = EPOLLOUT;
         epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event_writable);
@@ -121,6 +125,7 @@ void CLClientEpoll::addEvent(int socket_fd, int option)
     if (option == 1)
     {
         struct epoll_event event_readable;
+        bzero(&event_readable, sizeof(event_readable));
         event_readable.data.fd = socket_fd;
         event_readable.events = EPOLLIN;
         epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event_readable);
@@ -130,4 +135,7 @@ void CLClientEpoll::deleteEvent(int socket_fd)
 {
     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, socket_fd, NULL);
 }
-
+void CLClientEpoll::setStartTime(clock_t time)
+{
+    CLClientEpoll::start_time = time;
+}

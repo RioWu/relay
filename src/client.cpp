@@ -78,6 +78,7 @@ int main(int argc, const char *argv[])
             client_epoll.addEvent(socket_fd_odd, 0);
         }
     }
-
+    clock_t start_time = clock();
+    client_epoll.setStartTime(start_time);
     client_epoll.work();
 }

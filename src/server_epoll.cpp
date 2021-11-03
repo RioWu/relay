@@ -1,6 +1,7 @@
 #include "server_epoll.h"
 #include "lib.h"
 #include "fcntl.h"
+#include <string.h>
 #include <string>
 #include <sstream>
 using namespace std;
@@ -104,6 +105,7 @@ void CLServerEpoll::addEvent(int fd, int option)
     if (option == 0)
     {
         struct epoll_event event_writable;
+        bzero(&event_writable, sizeof(event_writable));
         event_writable.data.fd = fd;
         event_writable.events = EPOLLOUT;
         epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event_writable);
@@ -111,6 +113,7 @@ void CLServerEpoll::addEvent(int fd, int option)
     if (option == 1)
     {
         struct epoll_event event_readable;
+        bzero(&event_readable, sizeof(event_readable));
         event_readable.data.fd = fd;
         event_readable.events = EPOLLIN;
         epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event_readable);
@@ -120,4 +123,3 @@ void CLServerEpoll::deleteEvent(int socket_fd)
 {
     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, socket_fd, NULL);
 }
-

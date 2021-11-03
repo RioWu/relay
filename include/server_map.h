@@ -1,10 +1,12 @@
 #include <unordered_map>
+#include "buffer.h"
 class CLServerMap
 {
 private:
     std::unordered_map<int, int> client_conn_map;
     std::unordered_map<int, int> conn_client_map;
     std::unordered_map<int, std::string> data_map;
+    std::unordered_map<int, CLBuffer> conn_buff_map;
 
 public:
     void addBindPair(int client_id, int conn_fd);
