@@ -15,7 +15,7 @@ CLServerEpoll::CLServerEpoll(int listen_fd, int string_length)
 CLServerEpoll::~CLServerEpoll()
 {
     close(epoll_fd);
-    delete[] events;
+    free(events);
 }
 void CLServerEpoll::work()
 {

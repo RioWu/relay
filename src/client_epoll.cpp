@@ -15,7 +15,7 @@ CLClientEpoll::CLClientEpoll(std::string str, int string_length)
 CLClientEpoll::~CLClientEpoll()
 {
     close(epoll_fd);
-    delete[] events;
+    free(events);
 }
 void CLClientEpoll::work()
 {
@@ -41,72 +41,80 @@ void CLClientEpoll::doRead(int socket_fd)
 {
     char buf[string_length];
     int client_id = client_map.getClientId(socket_fd);
+    CLBuffer buffer = client_map.getBuffer(socket_fd);
+
     // client_id is odd,after read,should verify the accuracy
     if (client_id % 2 == 1)
     {
-        deleteEvent(socket_fd);
-        readN(socket_fd, buf, string_length);
-        // char * to string
-        std::string received_data = buf;
-        while ((int)received_data.length() > string_length)
+        int res = buffer.readByBuffer();
+        if (res == 1)
         {
-            received_data.pop_back();
-        }
-
-        if (received_data == str)
-        {
-            num_session_finished++;
-            // if (num_session_finished % 1000 == 0)
-            //     printf("has finished %d sessions\n", num_session_finished);
-            // 测试环境为本机，如果限制总转发数量，程序会结束过快而无法检测性能
-            if (num_session_finished == 10000)
+            buffer.getDataFromBuffer(buf);
+            // char * to string
+            std::string received_data = buf;
+            while ((int)received_data.length() > string_length)
             {
-                clock_t end_time = clock();
-                std::cout << "run time is " << (double)(end_time - start_time) / CLOCKS_PER_SEC << std::endl;
-                printf("10000 times relay ok!\n");
-                // pause();
+                received_data.pop_back();
             }
-            addEvent(socket_fd, 0);
-        }
-        else
-        {
-            num_session_failed++;
-            printf("has failed %d sessions\n", num_session_failed);
-            // printf("received data is %s,length is %lu\n", received_data.c_str(), received_data.length());
-            // printf("the correct data is %s,length is %lu\n", str.c_str(), str.length());
-            exit(0);
+
+            if (received_data == str)
+            {
+                num_session_finished++;
+                // if (num_session_finished % 1000 == 0)
+                printf("has finished %d sessions\n", num_session_finished);
+                // 测试环境为本机，如果限制总转发数量，程序会结束过快而无法检测性能
+                if (num_session_finished == 10000)
+                {
+                    clock_t end_time = clock();
+                    std::cout << "run time is " << (double)(end_time - start_time) / CLOCKS_PER_SEC << std::endl;
+                    printf("10000 times relay ok!\n");
+                    // pause();
+                }
+                modifyEvent(socket_fd, 0);
+            }
+            else
+            {
+                num_session_failed++;
+                printf("has failed %d sessions\n", num_session_failed);
+                // printf("received data is %s,length is %lu\n", received_data.c_str(), received_data.length());
+                // printf("the correct data is %s,length is %lu\n", str.c_str(), str.length());
+                exit(0);
+            }
         }
     }
     // client_id is even,after read,should write same data to matched client
     else if (client_id % 2 == 0)
     {
-        readN(socket_fd, buf, string_length);
-        // char * to string
-        std::string received_data = buf;
-        client_map.addData(client_id, received_data);
-        deleteEvent(socket_fd);
-        addEvent(socket_fd, 0);
+        int res = buffer.readByBuffer();
+        if (res == 1)
+        {
+            buffer.getDataFromBuffer(buf);
+            // char * to string
+            std::string received_data = buf;
+            client_map.addData(client_id, received_data);
+            modifyEvent(socket_fd, 0);
+        }
     }
 }
 void CLClientEpoll::doWrite(int socket_fd)
 {
     int client_id = client_map.getClientId(socket_fd);
+    CLBuffer buffer = client_map.getBuffer(socket_fd);
     // client_id is odd
     if (client_id % 2 == 1)
     {
-        int matched_socket = client_map.getSocketFd(client_id + 1);
-        writeN(socket_fd, (char *)str.data(), string_length);
-        addEvent(matched_socket, 1);
+        int res = buffer.writeByBuffer((char *)str.data());
+        if (res == 1)
+            modifyEvent(socket_fd, 1);
     }
     // client_id is even
     else if (client_id % 2 == 0)
     {
-        int matched_socket = client_map.getSocketFd(client_id - 1);
         std::string str = client_map.getData(client_id);
-        write(socket_fd, (char *)str.data(), string_length);
-        addEvent(matched_socket, 1);
+        int res = buffer.writeByBuffer((char *)str.data());
+        if (res == 1)
+            modifyEvent(socket_fd, 1);
     }
-    deleteEvent(socket_fd);
 }
 /**
  * option = 0:add writable event
@@ -131,10 +139,30 @@ void CLClientEpoll::addEvent(int socket_fd, int option)
         epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event_readable);
     }
 }
-void CLClientEpoll::deleteEvent(int socket_fd)
+/**
+ * option = 0:modify to writable event
+ * option = 1:modify to readable event
+ **/
+void CLClientEpoll::modifyEvent(int socket_fd, int option)
 {
-    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, socket_fd, NULL);
+    if (option == 0)
+    {
+        struct epoll_event event_writable;
+        bzero(&event_writable, sizeof(event_writable));
+        event_writable.data.fd = socket_fd;
+        event_writable.events = EPOLLOUT;
+        epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socket_fd, &event_writable);
+    }
+    if (option == 1)
+    {
+        struct epoll_event event_readable;
+        bzero(&event_readable, sizeof(event_readable));
+        event_readable.data.fd = socket_fd;
+        event_readable.events = EPOLLIN;
+        epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socket_fd, &event_readable);
+    }
 }
+
 void CLClientEpoll::setStartTime(clock_t time)
 {
     CLClientEpoll::start_time = time;

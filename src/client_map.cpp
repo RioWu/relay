@@ -14,6 +14,15 @@ std::string CLClientMap::getData(int client_id)
     else
         return data_map.at(client_id);
 }
+void CLClientMap::addBindBuffer(int socket_fd, int string_length)
+{
+    CLBuffer new_buffer(socket_fd, string_length);
+    sock_buff_map.insert(pair<int, CLBuffer>(socket_fd, new_buffer));
+}
+CLBuffer CLClientMap::getBuffer(int socket_fd)
+{
+    return sock_buff_map.at(socket_fd);
+}
 void CLClientMap::addBindPair(int socket_fd, int client_id)
 {
     sock_cli_map.insert(pair<int, int>(socket_fd, client_id));

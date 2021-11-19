@@ -62,6 +62,7 @@ int main(int argc, const char *argv[])
         // connect use block mode
         Connect(socket_fd, (struct sockaddr *)&servaddr, sizeof(servaddr));
         client_epoll.client_map.addBindPair(socket_fd, client_id);
+        client_epoll.client_map.addBindBuffer(socket_fd, string_length);
 
         client_id = htonl(client_id);
         // first write use block mode
@@ -72,10 +73,15 @@ int main(int argc, const char *argv[])
 
         // after a pair of socket connect successfully,add event;
         // odd client should write first
-        if (client_id % 2 % 2 == 0)
+        if (client_id % 2 == 1)
         {
-            int socket_fd_odd = client_epoll.client_map.getSocketFd(client_id - 1);
+            int socket_fd_odd = client_epoll.client_map.getSocketFd(client_id);
             client_epoll.addEvent(socket_fd_odd, 0);
+        }
+        if (client_id % 2 == 0)
+        {
+            int socket_fd_even = client_epoll.client_map.getSocketFd(client_id);
+            client_epoll.addEvent(socket_fd_even, 1);
         }
     }
     clock_t start_time = clock();

@@ -12,7 +12,9 @@ public:
     void addData(int client_id, std::string data);
     std::string getData(int client_id);
 
+    void addBindBuffer(int socket_fd,int string_length);
     void addBindPair(int socket_fd, int client_id);
+    CLBuffer getBuffer(int socket_fd);
     int getClientId(int socket_fd);
     int getSocketFd(int client_id);
 };

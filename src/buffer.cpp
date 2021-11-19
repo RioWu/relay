@@ -3,12 +3,13 @@
 #include <cstring>
 #include <unistd.h>
 CLBuffer::CLBuffer(int socket_fd, int string_length)
-    : socket_fd(socket_fd),
-      string_length(string_length),
-      write_n(0),
-      read_n(0),
-      writeIndex(0)
 {
+    CLBuffer::buffer = vector<char>(0);
+    CLBuffer::socket_fd = socket_fd;
+    CLBuffer::string_length = string_length;
+    CLBuffer::write_n = 0;
+    CLBuffer::read_n = 0;
+    CLBuffer::writeIndex = 0;
 }
 /**
  *  return 1 means all data has been sent
@@ -18,23 +19,23 @@ int CLBuffer::writeByBuffer(char *data)
 {
     int n = 0;
     // if there is no data writable,should put data first.
-    if (writeIndex == buffer.size())
+    if (writeIndex == (int)buffer.size())
     {
         for (int i = 0; i < string_length; i++)
         {
             buffer.push_back(*(data + i));
         }
     }
-    while (errno != EAGAIN)
+    while (errno != EAGAIN && write_n != string_length)
     {
-        n = write(socket_fd, &*(buffer.begin() + writeIndex), string_length);
+        //&* 表示取迭代器->取迭代器的值->取地址
+        n = write(socket_fd, &*(buffer.begin() + writeIndex), buffer.size() - writeIndex);
+        buffer.erase(buffer.begin() + writeIndex, buffer.begin() + writeIndex + n - 1);
         writeIndex = writeIndex + n;
         write_n = write_n + n;
     }
-    if (write_n = string_length)
+    if (write_n == string_length)
     {
-        buffer.erase(buffer.begin() + writeIndex - 1, buffer.end() - 1);
-        writeIndex = buffer.size();
         return 1;
     }
     else
@@ -49,12 +50,13 @@ int CLBuffer::readByBuffer()
     int n = 0;
     int tem_buf_index = 0;
     char tem_buf[string_length] = {'\0'};
-    while (errno != EAGAIN)
+    while (errno != EAGAIN && read_n != string_length)
     {
         n = read(socket_fd, tem_buf + tem_buf_index, string_length);
         for (int i = 0; i < n; i++)
         {
-            buffer.insert(buffer.begin() + writeIndex - 1 + i, tem_buf[i]);
+            // vector.insert(iterator,data) 在iterator表示的这个元素之前插入新数据
+            buffer.insert(buffer.begin() + writeIndex + i, tem_buf[i]);
         }
         writeIndex = writeIndex + n;
         read_n = read_n + n;
